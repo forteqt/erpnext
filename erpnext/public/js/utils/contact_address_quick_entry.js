@@ -78,15 +78,17 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 			fieldtype: "Data"
 		},
 		{
-			label: __("State"),
-			fieldname: "state",
-			fieldtype: "Data"
+			label: __("Emirate"),
+			fieldname: "emirate",
+			fieldtype: "Select",
+			options:["Abu Dhabi", "Ajman", "Dubai", "Fujairah", "Ras Al Khaimah", "Sharjah", "Umm Al Quwain"]
 		},
 		{
 			label: __("Country"),
 			fieldname: "country",
 			fieldtype: "Link",
-			options: "Country"
+			options: "Country",
+			default: "United Arab Emirates"
 		},
 		{
 			label: __("Customer POS Id"),

@@ -764,6 +764,7 @@ def make_address(args, is_primary_address=1, is_shipping_address=1):
 			"address_line2": args.get("address_line2"),
 			"city": args.get("city"),
 			"state": args.get("state"),
+			"emirate": args.get("emirate"),
 			"pincode": args.get("pincode"),
 			"country": args.get("country"),
 			"is_primary_address": is_primary_address,

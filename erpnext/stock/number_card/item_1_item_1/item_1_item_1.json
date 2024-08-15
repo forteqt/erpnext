@@ -1,0 +1,22 @@
+{
+ "creation": "2024-01-11 07:42:55.123356",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "{\"company\":\"Al Mashhoor Office Equipment Trading\",\"from_date\":\"2023-12-11\",\"to_date\":\"2024-01-11\",\"item_code\":\"TEST ITEM 1\",\"valuation_field_type\":\"Currency\",\"ignore_closing_balance\":1}",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "label": "Item 1 Item 1",
+ "modified": "2024-01-11 07:44:17.970302",
+ "modified_by": "Administrator",
+ "module": "Stock",
+ "name": "Item 1 Item 1",
+ "owner": "Administrator",
+ "report_field": "bal_qty",
+ "report_function": "Sum",
+ "report_name": "Stock Balance",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Report"
+}

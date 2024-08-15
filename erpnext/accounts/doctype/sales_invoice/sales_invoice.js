@@ -310,7 +310,9 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 				price_list: this.frm.doc.selling_price_list,
 				pos_profile: pos_profile
 			}, function() {
-				me.apply_pricing_rule();
+				if(this.frm.doc.ignore_pricing_rule == 0){
+					me.apply_pricing_rule();
+				}
 			});
 
 		if(this.frm.doc.customer) {

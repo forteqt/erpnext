@@ -1,0 +1,84 @@
+<h2 class="text-center">{%= __("Statement of Account") %}</h2>
+<h4 class="text-center">
+	{% if (filters.party_name) { %}
+		{%= filters.party_name %}
+	{% } else if (filters.party && filters.party.length) { %}
+		{%= filters.party %}
+	{% } else if (filters.account) { %}
+		{%= filters.account %}
+	{% } %}
+</h4>
+
+<h6 class="text-center">
+	{% if (filters.tax_id) { %}
+	{%= __("Tax Id: ")%}	{%= filters.tax_id %}
+	{% } %}
+</h6>
+
+<h5 class="text-center">
+	{%= frappe.datetime.str_to_user(filters.from_date) %}
+	{%= __("to") %}
+	{%= frappe.datetime.str_to_user(filters.to_date) %}
+</h5>
+<hr>
+<table class="table table-bordered courier-prime-regular" style="font-size:90%;">
+	<thead>
+		<tr>
+			<th style="width: 12%">{%= __("Date") %}</th>
+			<th style="width: 42%">{%= __("Description") %}</th>
+			<th style="width: 14%">{%= __("Debit") %}</th>
+			<th style="width: 14%">{%= __("Credit") %}</th>
+			<th style="width: 18%">{%= __("Balance (Dr - Cr)") %}</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for(var i=0, l=data.length; i<l; i++) { %}
+			<tr>
+			{% if(data[i].posting_date) { %}
+				<td>{%= frappe.datetime.str_to_user(data[i].posting_date) %}</td>
+			{% if(data[i].voucher_type == "Payment Entry") { %}
+				<td style="font-size:100%;">Received
+			{% } else if(data[i].voucher_type == "Sales Invoice") { %}
+				<td style="font-size:100%;">Sales
+			{% }else{ %}
+				<td style="font-size:100%;">{%= data[i].voucher_type %}
+			{% } %}
+					: {%= data[i].voucher_no %}
+				</td>
+			<!-- {% var longest_word = cstr(data[i].remarks).split(" ").reduce((longest, word) => word.length > longest.length ? word : longest, ""); %}
+				<td {% if longest_word.length > 45 %} class="overflow-wrap-anywhere" {% endif %}>
+					<span>
+					{% if(!(filters.party || filters.account)) { %}
+						{%= data[i].party || data[i].account %}
+						<br>
+					{% } %}
+
+					<br>{%= __("Remarks") %}: {%= data[i].remarks %}
+					{% if(data[i].bill_no) { %}
+						<br>{%= __("Supplier Invoice No") %}: {%= data[i].bill_no %}
+					{% } %}
+					</span>
+				</td> -->
+				<td style="text-align: right">
+					{%= format_number(data[i].debit,null,2) %}
+				</td>
+				<td style="text-align: right">
+					{%= format_number(data[i].credit,null,2) %}
+				</td>
+			{% } else { %}
+				<td></td>
+				<td style="font-size:100%;"><b>{%= frappe.format(data[i].account, {fieldtype: "Link"}) || "&nbsp;" %}</b></td>
+				<td style="text-align: right">
+					{%= format_number(data[i].debit,null,2) %}
+				</td>
+				<td style="text-align: right">
+					{%= format_number(data[i].credit,null,2) %}
+				</td>
+			{% } %}
+				<td style="text-align: right">
+					{%= format_number(data[i].balance,null,2) %} Dr.
+				</td>
+			</tr>
+		{% } %}
+	</tbody>
+</table>

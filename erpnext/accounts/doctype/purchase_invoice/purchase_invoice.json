@@ -382,11 +382,13 @@
   {
    "fieldname": "bill_no",
    "fieldtype": "Data",
+   "in_global_search": 1,
    "label": "Supplier Invoice No",
+   "no_copy": 1,
    "oldfieldname": "bill_no",
    "oldfieldtype": "Data",
    "print_hide": 1,
-   "search_index": 1
+   "unique": 1
   },
   {
    "fieldname": "column_break_15",
@@ -972,7 +974,7 @@
    "read_only": 1
   },
   {
-   "default": "0",
+   "default": "1",
    "depends_on": "grand_total",
    "fieldname": "disable_rounded_total",
    "fieldtype": "Check",
@@ -1613,7 +1615,7 @@
  "idx": 204,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-26 10:46:00.469053",
+ "modified": "2024-03-15 12:14:13.602719",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Purchase Invoice",

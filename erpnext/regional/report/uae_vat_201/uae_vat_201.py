@@ -5,11 +5,10 @@
 import frappe
 from frappe import _
 
-
 def execute(filters=None):
 	columns = get_columns()
 	data, emirates, amounts_by_emirate = get_data(filters)
-	return columns, data
+	return columns, data 
 
 
 def get_columns():
@@ -134,6 +133,35 @@ def append_data(data, no, legend, amount, vat_amount):
 	data.append({"no": no, "legend": legend, "amount": amount, "vat_amount": vat_amount})
 
 
+# def get_total_emiratewise(filters):
+# 	"""Returns Emiratewise Amount and Taxes."""
+# 	conditions = get_conditions(filters)
+# 	try:
+# 		return frappe.db.sql(
+# 			"""
+# 			select
+# 				s.vat_emirate as emirate, sum(i.base_net_amount) as total, sum(i.tax_amount)
+# 			from
+# 				`tabSales Invoice Item` i inner join `tabSales Invoice` s
+# 			on
+# 				i.parent = s.name
+# 			inner 
+# 				join `tabAddress` a
+# 			on
+# 				s.company_address = a.name
+# 			where
+# 				s.docstatus = 1 and  i.is_exempt != 1 and i.is_zero_rated != 1
+# 				{where_conditions}
+# 			group by
+# 				s.vat_emirate;
+# 			""".format(
+# 				where_conditions=conditions
+# 			),
+# 			filters,
+# 		)
+# 	except (IndexError, TypeError):
+# 		return 0
+
 def get_total_emiratewise(filters):
 	"""Returns Emiratewise Amount and Taxes."""
 	conditions = get_conditions(filters)
@@ -141,16 +169,24 @@ def get_total_emiratewise(filters):
 		return frappe.db.sql(
 			"""
 			select
-				s.vat_emirate as emirate, sum(i.base_net_amount) as total, sum(i.tax_amount)
+				tsi.vat_emirate as emirate,sum(tper.allocated_amount) as total,sum(tper.allocated_amount)*0.05
 			from
-				`tabSales Invoice Item` i inner join `tabSales Invoice` s
+				`tabPayment Entry Reference` tper  join `tabPayment Entry` tpe
 			on
-				i.parent = s.name
+				tper.parent = tpe.name AND tpe.docstatus = 1  
+			left join
+				`tabSales Invoice` tsi 
+			on
+				tper.reference_name  =tsi.name
+			inner JOIN 
+				`tabAddress` ta
+			on
+				tsi.company_address = ta.name
 			where
-				s.docstatus = 1 and  i.is_exempt != 1 and i.is_zero_rated != 1
+				tsi.docstatus = 1
 				{where_conditions}
 			group by
-				s.vat_emirate;
+				tsi.vat_emirate;
 			""".format(
 				where_conditions=conditions
 			),
@@ -182,6 +218,10 @@ def get_reverse_charge_total(filters):
 	query_filters = get_filters(filters)
 	query_filters.append(["reverse_charge", "=", "Y"])
 	query_filters.append(["docstatus", "=", 1])
+	if filters.payment_status != "":
+		query_filters.append(["status", "in", filters.payment_status])
+	# if filters.company_trn != "":
+	# 	query_filters.append(["status", "in", filters.payment_status])
 	try:
 		return (
 			frappe.db.get_all(
@@ -196,6 +236,7 @@ def get_reverse_charge_total(filters):
 def get_reverse_charge_tax(filters):
 	"""Returns the sum of the tax of each Purchase invoice made."""
 	conditions = get_conditions_join(filters)
+	return 0
 	return (
 		frappe.db.sql(
 			"""
@@ -203,6 +244,10 @@ def get_reverse_charge_tax(filters):
 			`tabPurchase Invoice` p inner join `tabGL Entry` gl
 		on
 			gl.voucher_no =  p.name
+		inner 
+			join `tabAddress` a
+		on
+			p.billing_address = a.name
 		where
 			p.reverse_charge = "Y"
 			and p.docstatus = 1
@@ -220,6 +265,7 @@ def get_reverse_charge_tax(filters):
 
 def get_reverse_charge_recoverable_total(filters):
 	"""Returns the sum of the total of each Purchase invoice made with recoverable reverse charge."""
+	return 0
 	query_filters = get_filters(filters)
 	query_filters.append(["reverse_charge", "=", "Y"])
 	query_filters.append(["recoverable_reverse_charge", ">", "0"])
@@ -238,6 +284,7 @@ def get_reverse_charge_recoverable_total(filters):
 def get_reverse_charge_recoverable_tax(filters):
 	"""Returns the sum of the tax of each Purchase invoice made."""
 	conditions = get_conditions_join(filters)
+	return 0
 	return (
 		frappe.db.sql(
 			"""
@@ -247,6 +294,10 @@ def get_reverse_charge_recoverable_tax(filters):
 			`tabPurchase Invoice` p  inner join `tabGL Entry` gl
 		on
 			gl.voucher_no = p.name
+		inner 
+			join `tabAddress` a
+		on
+			p.billing_address = a.name
 		where
 			p.reverse_charge = "Y"
 			and p.docstatus = 1
@@ -266,20 +317,102 @@ def get_reverse_charge_recoverable_tax(filters):
 def get_conditions_join(filters):
 	"""The conditions to be used to filter data to calculate the total vat."""
 	conditions = ""
-	for opts in (
-		("company", " and p.company=%(company)s"),
-		("from_date", " and p.posting_date>=%(from_date)s"),
-		("to_date", " and p.posting_date<=%(to_date)s"),
-	):
-		if filters.get(opts[0]):
-			conditions += opts[1]
+	if filters.payment_status == "" and filters.company_trn == "":
+		for opts in (
+			("company", " and tpi.company=%(company)s"),
+			("from_date", " and tpe.posting_date>=%(from_date)s"),
+			("to_date", " and tpe.posting_date<=%(to_date)s"),
+		):
+			if filters.get(opts[0]):
+				conditions += opts[1]
+	elif filters.payment_status == "":
+		for opts in (
+			("company", " and tpi.company=%(company)s"),
+			("from_date", " and tpe.posting_date>=%(from_date)s"),
+			("to_date", " and tpe.posting_date<=%(to_date)s"),
+			("company_trn", " and ta.custom_trn in %(company_trn)s"),
+		):
+			if filters.get(opts[0]):
+				conditions += opts[1]
+	elif filters.company_trn == "":
+		if (filters.payment_status == "Paid,Partly Paid"):
+			for opts in (
+				("company", " and tpi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tpi.status in ('Paid','Partly Paid')"),
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
+		else:
+			for opts in (
+				("company", " and tpi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tpi.status in (%(payment_status)s)")
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
+	else:
+		if (filters.payment_status == "Paid,Partly Paid"):
+			for opts in (
+				("company", " and tpi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tpi.status in ('Paid','Partly Paid')"),
+				("company_trn", " and ta.custom_trn in %(company_trn)s")
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
+		else:
+			for opts in (
+				("company", " and tpi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tpi.status in (%(payment_status)s)"),
+				("company_trn", " and ta.custom_trn in %(company_trn)s")
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
 	return conditions
 
 
 def get_standard_rated_expenses_total(filters):
 	"""Returns the sum of the total of each Purchase invoice made with recoverable reverse charge."""
+	conditions = get_conditions_join(filters)
+	try: 
+		return (
+			frappe.db.sql(
+				"""
+			select
+				sum(tper.allocated_amount) as total
+			from
+				`tabPayment Entry Reference` tper inner join `tabPayment Entry` tpe
+			on
+				tper.parent = tpe.name 
+			right join
+				`tabPurchase Invoice` tpi 
+			on
+				tper.reference_name  =tpi.name 
+			inner JOIN 
+				`tabAddress` ta
+			on
+				tpi.billing_address = ta.name
+			where
+				tpe.docstatus = 1 and
+				tpi.docstatus = 1
+				{where_conditions} ;
+			""".format(
+					where_conditions=conditions
+				),
+				filters,
+			)[0][0]
+			or 0
+		)
+	except (IndexError,TypeError):
+		return 0
 	query_filters = get_filters(filters)
-	query_filters.append(["recoverable_standard_rated_expenses", ">", 0])
+	# query_filters.append(["recoverable_standard_rated_expenses", ">", 0])
 	query_filters.append(["docstatus", "=", 1])
 	try:
 		return (
@@ -294,15 +427,47 @@ def get_standard_rated_expenses_total(filters):
 
 def get_standard_rated_expenses_tax(filters):
 	"""Returns the sum of the tax of each Purchase invoice made."""
+	conditions = get_conditions_join(filters)
+	try: 
+		return (
+			frappe.db.sql(
+				"""
+			select
+				sum(tper.allocated_amount)*0.05 as total
+			from
+				`tabPayment Entry Reference` tper inner join `tabPayment Entry` tpe
+			on
+				tper.parent = tpe.name 
+			right join
+				`tabPurchase Invoice` tpi 
+			on
+				tper.reference_name  =tpi.name 
+			inner JOIN 
+				`tabAddress` ta
+			on
+				tpi.billing_address = ta.name
+			where
+				tpe.docstatus = 1 and
+				tpi.docstatus = 1
+				{where_conditions} ;
+			""".format(
+					where_conditions=conditions
+				),
+				filters,
+			)[0][0]
+			or 0
+		)
+	except (IndexError,TypeError):
+		return 0
 	query_filters = get_filters(filters)
-	query_filters.append(["recoverable_standard_rated_expenses", ">", 0])
+	# query_filters.append(["recoverable_standard_rated_expenses", ">", 0])
 	query_filters.append(["docstatus", "=", 1])
 	try:
 		return (
 			frappe.db.get_all(
 				"Purchase Invoice",
 				filters=query_filters,
-				fields=["sum(recoverable_standard_rated_expenses)"],
+				fields=["sum(total_taxes_and_charges)"],
 				as_list=True,
 				limit=1,
 			)[0][0]
@@ -350,6 +515,7 @@ def get_tourist_tax_return_tax(filters):
 
 def get_zero_rated_total(filters):
 	"""Returns the sum of each Sales Invoice Item Amount which is zero rated."""
+	return 0
 	conditions = get_conditions(filters)
 	try:
 		return (
@@ -361,6 +527,10 @@ def get_zero_rated_total(filters):
 				`tabSales Invoice Item` i inner join `tabSales Invoice` s
 			on
 				i.parent = s.name
+			inner 
+				join `tabAddress` a
+			on
+				s.company_address = a.name
 			where
 				s.docstatus = 1 and  i.is_zero_rated = 1
 				{where_conditions} ;
@@ -377,6 +547,7 @@ def get_zero_rated_total(filters):
 
 def get_exempt_total(filters):
 	"""Returns the sum of each Sales Invoice Item Amount which is Vat Exempt."""
+	return 0
 	conditions = get_conditions(filters)
 	try:
 		return (
@@ -388,6 +559,10 @@ def get_exempt_total(filters):
 				`tabSales Invoice Item` i inner join `tabSales Invoice` s
 			on
 				i.parent = s.name
+			inner 
+				join `tabAddress` a
+			on
+				s.company_address = a.name
 			where
 				s.docstatus = 1 and  i.is_exempt = 1
 				{where_conditions} ;
@@ -405,11 +580,129 @@ def get_exempt_total(filters):
 def get_conditions(filters):
 	"""The conditions to be used to filter data to calculate the total sale."""
 	conditions = ""
-	for opts in (
-		("company", " and company=%(company)s"),
-		("from_date", " and posting_date>=%(from_date)s"),
-		("to_date", " and posting_date<=%(to_date)s"),
-	):
-		if filters.get(opts[0]):
-			conditions += opts[1]
+
+	if filters.payment_status == "" and filters.company_trn == "":
+		for opts in (
+			# ("company", " and tsi.company=%(company)s"),
+			("from_date", " and tpe.posting_date>=%(from_date)s"),
+			("to_date", " and tpe.posting_date<=%(to_date)s"),
+		):
+			if filters.get(opts[0]):
+				conditions += opts[1]
+	elif filters.payment_status == "":
+		for opts in (
+			# ("company", " and tsi.company=%(company)s"),
+			("from_date", " and tpe.posting_date>=%(from_date)s"),
+			("to_date", " and tpe.posting_date<=%(to_date)s"),
+			("company_trn", " and ta.custom_trn in %(company_trn)s"),
+		):
+			if filters.get(opts[0]):
+				conditions += opts[1]
+	elif filters.company_trn == "":
+		if (filters.payment_status == "Paid,Partly Paid"):
+			for opts in (
+				# ("company", " and tsi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tsi.status in ('Paid','Partly Paid')"),
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
+		else:
+			for opts in (
+				# ("company", " and tsi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tsi.status in (%(payment_status)s)")
+			):
+				if filters.get(opts[0]):
+					conditions += opts[1]
+	else:
+		if (filters.payment_status == "Paid,Partly Paid"):
+			for opts in (
+				# ("company", " and tsi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tsi.status in ('Paid','Partly Paid')"),
+				("company_trn", " and ta.custom_trn in %(company_trn)s"),
+			):
+				frappe.errprint(filters.company_trn)
+				if filters.get(opts[0]):
+					conditions += opts[1]
+		else:
+			for opts in (
+				# ("company", " and tsi.company=%(company)s"),
+				("from_date", " and tpe.posting_date>=%(from_date)s"),
+				("to_date", " and tpe.posting_date<=%(to_date)s"),
+				("payment_status", "and tsi.status in (%(payment_status)s)"),
+				("company_trn", " and ta.custom_trn in %(company_trn)s"),
+			):
+				frappe.errprint(filters.company_trn)
+				if filters.get(opts[0]):
+					conditions += opts[1]
 	return conditions
+
+# def get_conditions(filters):
+# 	"""The conditions to be used to filter data to calculate the total sale."""
+# 	conditions = ""
+
+# 	if filters.payment_status == "" and filters.company_trn == "":
+# 		for opts in (
+# 			("company", " and s.company=%(company)s"),
+# 			("from_date", " and s.posting_date>=%(from_date)s"),
+# 			("to_date", " and s.posting_date<=%(to_date)s"),
+# 		):
+# 			if filters.get(opts[0]):
+# 				conditions += opts[1]
+# 	elif filters.payment_status == "":
+# 		for opts in (
+# 			("company", " and s.company=%(company)s"),
+# 			("from_date", " and s.posting_date>=%(from_date)s"),
+# 			("to_date", " and s.posting_date<=%(to_date)s"),
+# 			("company_trn", " and a.custom_trn in %(company_trn)s"),
+# 		):
+# 			if filters.get(opts[0]):
+# 				conditions += opts[1]
+# 	elif filters.company_trn == "":
+# 		if (filters.payment_status == "Paid,Partly Paid"):
+# 			for opts in (
+# 				("company", " and s.company=%(company)s"),
+# 				("from_date", " and s.posting_date>=%(from_date)s"),
+# 				("to_date", " and s.posting_date<=%(to_date)s"),
+# 				("payment_status", "and s.status in ('Paid','Partly Paid')"),
+# 			):
+# 				if filters.get(opts[0]):
+# 					conditions += opts[1]
+# 		else:
+# 			for opts in (
+# 				("company", " and s.company=%(company)s"),
+# 				("from_date", " and s.posting_date>=%(from_date)s"),
+# 				("to_date", " and s.posting_date<=%(to_date)s"),
+# 				("payment_status", "and s.status in (%(payment_status)s)")
+# 			):
+# 				if filters.get(opts[0]):
+# 					conditions += opts[1]
+# 	else:
+# 		if (filters.payment_status == "Paid,Partly Paid"):
+# 			for opts in (
+# 				("company", " and s.company=%(company)s"),
+# 				("from_date", " and s.posting_date>=%(from_date)s"),
+# 				("to_date", " and s.posting_date<=%(to_date)s"),
+# 				("payment_status", "and s.status in ('Paid','Partly Paid')"),
+# 				("company_trn", " and a.custom_trn in %(company_trn)s"),
+# 			):
+# 				frappe.errprint(filters.company_trn)
+# 				if filters.get(opts[0]):
+# 					conditions += opts[1]
+# 		else:
+# 			for opts in (
+# 				("company", " and s.company=%(company)s"),
+# 				("from_date", " and s.posting_date>=%(from_date)s"),
+# 				("to_date", " and s.posting_date<=%(to_date)s"),
+# 				("payment_status", "and s.status in (%(payment_status)s)"),
+# 				("company_trn", " and a.custom_trn in %(company_trn)s"),
+# 			):
+# 				frappe.errprint(filters.company_trn)
+# 				if filters.get(opts[0]):
+# 					conditions += opts[1]
+# 	return conditions

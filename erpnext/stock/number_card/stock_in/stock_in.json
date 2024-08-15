@@ -1,0 +1,22 @@
+{
+ "creation": "2024-01-08 14:06:10.314065",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "{\"company\":\"Al Mashhoor Office Equipment Trading\",\"from_date\":\"2023-12-08\",\"to_date\":\"2024-01-08\",\"warehouse\":\"Stores - AM\",\"valuation_field_type\":\"Float\"}",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "label": "Stock In",
+ "modified": "2024-01-08 14:06:10.363654",
+ "modified_by": "Administrator",
+ "module": "Stock",
+ "name": "Stock In",
+ "owner": "Administrator",
+ "report_field": "in_qty",
+ "report_function": "Sum",
+ "report_name": "Stock Ledger",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Report"
+}
