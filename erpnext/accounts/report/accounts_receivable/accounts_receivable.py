@@ -216,6 +216,7 @@ class ReceivablePayableReport(object):
 				row = self.voucher_balance.get((ple.account, ple.voucher_type, ple.voucher_no, ple.party))
 
 		row.party_type = ple.party_type
+		row.from_template = ple.from_template
 		return row
 
 	def update_voucher_balance(self, ple):
@@ -327,6 +328,7 @@ class ReceivablePayableReport(object):
 				self.data.append(self.total_row_map.get("Total", {}))
 
 	def append_row(self, row):
+		# If this is a Journal Entry, ensure from_template is included
 		self.allocate_future_payments(row)
 		self.set_invoice_details(row)
 		self.set_party_details(row)
@@ -438,7 +440,7 @@ class ReceivablePayableReport(object):
 		# Invoices booked via Journal Entries
 		journal_entries = frappe.db.sql(
 			"""
-			select name, due_date, bill_no, bill_date
+			select name, due_date, bill_no, bill_date, from_template
 			from `tabJournal Entry`
 			where posting_date <= %s
 		""",
@@ -613,6 +615,7 @@ class ReceivablePayableReport(object):
 				jea.reference_name.as_("invoice_no"),
 				jea.party,
 				jea.party_type,
+				jea.from_template,
 				je.posting_date.as_("future_date"),
 				je.cheque_no.as_("future_ref"),
 			)
@@ -767,8 +770,12 @@ class ReceivablePayableReport(object):
 			self.qb_selection_filter.append(self.ple.posting_date.lte(self.filters.report_date))
 
 		ple = qb.DocType("Payment Ledger Entry")
+		je = qb.DocType("Journal Entry")
+
 		query = (
 			qb.from_(ple)
+			.left_join(je)
+			.on((ple.voucher_type == "Journal Entry") & (ple.voucher_no == je.name))
 			.select(
 				ple.name,
 				ple.account,
@@ -784,6 +791,7 @@ class ReceivablePayableReport(object):
 				ple.account_currency,
 				ple.amount,
 				ple.amount_in_account_currency,
+				je.from_template
 			)
 			.where(ple.delinked == 0)
 			.where(Criterion.all(self.qb_selection_filter))
@@ -1046,6 +1054,7 @@ class ReceivablePayableReport(object):
 
 		self.add_column(label=_("Cost Center"), fieldname="cost_center", fieldtype="Data")
 		self.add_column(label=_("Voucher Type"), fieldname="voucher_type", fieldtype="Data")
+		self.add_column(label=_("From Template"), fieldname="from_template", fieldtype="Data")
 		self.add_column(
 			label=_("Voucher No"),
 			fieldname="voucher_no",

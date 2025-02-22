@@ -29,8 +29,6 @@
   "update_billed_amount_in_delivery_note",
   "is_debit_note",
   "amended_from",
-  "section_break_cwip",
-  "ref",
   "accounting_dimensions_section",
   "cost_center",
   "dimension_col_break",
@@ -544,6 +542,7 @@
   {
    "fieldname": "territory",
    "fieldtype": "Link",
+   "hidden": 1,
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Territory",
@@ -2175,19 +2174,6 @@
    "fieldtype": "Check",
    "label": "Don't Create Loyalty Points",
    "no_copy": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_cwip",
-   "fieldtype": "Section Break",
-   "label": "Reference"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "ref",
-   "fieldtype": "Text Editor",
-   "hidden": 1,
-   "label": "Reference"
   }
  ],
  "icon": "fa fa-file-text",
@@ -2200,7 +2186,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2024-03-15 12:12:29.695193",
+ "modified": "2025-01-24 13:42:19.813778",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",

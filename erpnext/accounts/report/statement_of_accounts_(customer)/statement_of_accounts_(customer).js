@@ -207,6 +207,18 @@ frappe.query_reports["Statement Of Accounts (Customer)"] = {
 			"fieldtype": "Check"
 		},
 		{
+			"fieldname": "ignore_opening_closing_in_print",
+			"label": __("Ignore opeing & closing in print"),
+			"fieldtype": "Check",
+			"default": 0
+		},
+		{
+			"fieldname": "consolidate_ledger_balance",
+			"label": __("Consolidate Ledger Balance"),
+			"fieldtype": "Check",
+			"default": 1
+		},
+		{
 			"fieldname": "ignore_err",
 			"label": __("Ignore Exchange Rate Revaluation Journals"),
 			"fieldtype": "Check"

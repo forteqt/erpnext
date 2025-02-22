@@ -138,7 +138,7 @@
 					{% } else { %}
 						<th style="width: 24%">{%= __("Reference") %}</th>
 					{% } %}
-					{% if(!filters.show_future_payments) { %}
+					{% if(!filters.show_future_payments && !!filters.show_remarks) { %}
 						<th style="width: 20%">{%= (filters.party) ? __("Remarks"): __("Party") %}</th>
 					{% } %}
 					<th style="width: 10%; text-align: right">{%= __("Invoiced Amount") %}</th>
@@ -173,17 +173,21 @@
 						<td style="text-align: right">{%= data[i]["age"] %}</td>
 						<td>
 							{% if(!filters.show_future_payments) { %}
-								{%= data[i]["voucher_type"] %}
+								{% if(!!data[i]["from_template"]) { %}
+									{%= data[i]["from_template"] %}
+								{% } else { %}
+									{%= data[i]["voucher_type"] %}
+								{% } %}
 								<br>
 							{% } %}
-							{%= data[i]["voucher_no"] %}
+							{%= data[i].voucher_no.at(-2) === '-' ? data[i].voucher_no.slice(0,-2) : data[i].voucher_no %}
 						</td>
 
 						{% if(report.report_name === "Accounts Receivable" && filters.show_sales_person) { %}
 						<td>{%= data[i]["sales_person"] %}</td>
 						{% } %}
 
-						{% if(!filters.show_future_payments) { %}
+						{% if(!filters.show_future_payments && !!filters.show_remarks) { %}
 						<td>
 							{% if(!(filters.party)) { %}
 								{%= data[i]["party"] %}
@@ -203,16 +207,16 @@
 						{% } %}
 
 						<td style="text-align: right">
-							{%= format_currency(data[i]["invoiced"], data[i]["currency"]) %}</td>
+							{%= format_currency(data[i]["invoiced"], data[i]["currency"],2) %}</td>
 
 						{% if(!filters.show_future_payments) { %}
 							<td style="text-align: right">
-								{%= format_currency(data[i]["paid"], data[i]["currency"]) %}</td>
+								{%= format_currency(data[i]["paid"], data[i]["currency"],2) %}</td>
 							<td style="text-align: right">
-								{%= format_currency(data[i]["credit_note"], data[i]["currency"]) %}</td>
+								{%= format_currency(data[i]["credit_note"], data[i]["currency"],2) %}</td>
 						{% } %}
 						<td style="text-align: right">
-							{%= format_currency(data[i]["outstanding"], data[i]["currency"]) %}</td>
+							{%= format_currency(data[i]["outstanding"], data[i]["currency"],2) %}</td>
 
 						{% if(filters.show_future_payments) { %}
 							{% if(report.report_name === "Accounts Receivable") { %}
@@ -220,8 +224,8 @@
 									{%= data[i]["po_no"] %}</td>
 							{% } %}
 							<td style="text-align: right">{%= data[i]["future_ref"] %}</td>
-							<td style="text-align: right">{%= format_currency(data[i]["future_amount"], data[i]["currency"]) %}</td>
-							<td style="text-align: right">{%= format_currency(data[i]["remaining_balance"], data[i]["currency"]) %}</td>
+							<td style="text-align: right">{%= format_currency(data[i]["future_amount"], data[i]["currency"],2) %}</td>
+							<td style="text-align: right">{%= format_currency(data[i]["remaining_balance"], data[i]["currency",2]) %}</td>
 						{% } %}
 					{% } else { %}
 						<td></td>
@@ -231,18 +235,20 @@
 						{% if(report.report_name === "Accounts Receivable" && filters.show_sales_person) { %}
 						<td></td>
 						{% } %}
+						{% if(!!filters.show_remarks){ %}
 						<td></td>
+						{% } %}
 						<td style="text-align: right"><b>{%= __("Total") %}</b></td>
 						<td style="text-align: right">
-							{%= format_currency(data[i]["invoiced"], data[i]["currency"] ) %}</td>
+							{%= format_currency(data[i]["invoiced"], data[i]["currency"],2 ) %}</td>
 
 						{% if(!filters.show_future_payments) { %}
 							<td style="text-align: right">
 								{%= format_currency(data[i]["paid"], data[i]["currency"]) %}</td>
-							<td style="text-align: right">{%= format_currency(data[i]["credit_note"], data[i]["currency"]) %} </td>
+							<td style="text-align: right">{%= format_currency(data[i]["credit_note"], data[i]["currency"],2) %} </td>
 						{% } %}
 						<td style="text-align: right">
-							{%= format_currency(data[i]["outstanding"], data[i]["currency"]) %}</td>
+							{%= format_currency(data[i]["outstanding"], data[i]["currency"],2) %}</td>
 
 						{% if(filters.show_future_payments) { %}
 							{% if(report.report_name === "Accounts Receivable") { %}
@@ -250,8 +256,8 @@
 									{%= data[i]["po_no"] %}</td>
 							{% } %}
 							<td style="text-align: right">{%= data[i]["future_ref"] %}</td>
-							<td style="text-align: right">{%= format_currency(data[i]["future_amount"], data[i]["currency"]) %}</td>
-							<td style="text-align: right">{%= format_currency(data[i]["remaining_balance"], data[i]["currency"]) %}</td>
+							<td style="text-align: right">{%= format_currency(data[i]["future_amount"], data[i]["currency"],2) %}</td>
+							<td style="text-align: right">{%= format_currency(data[i]["remaining_balance"], data[i]["currency"],2) %}</td>
 						{% } %}
 					{% } %}
 				{% } else { %}
@@ -272,10 +278,10 @@
 						{% } else { %}
 							<td><b>{%= __("Total") %}</b></td>
 						{% } %}
-						<td style="text-align: right">{%= format_currency(data[i]["invoiced"], data[i]["currency"]) %}</td>
-						<td style="text-align: right">{%= format_currency(data[i]["paid"], data[i]["currency"]) %}</td>
-						<td style="text-align: right">{%= format_currency(data[i]["credit_note"], data[i]["currency"]) %}</td>
-						<td style="text-align: right">{%= format_currency(data[i]["outstanding"], data[i]["currency"]) %}</td>
+						<td style="text-align: right">{%= format_currency(data[i]["invoiced"], data[i]["currency"],2) %}</td>
+						<td style="text-align: right">{%= format_currency(data[i]["paid"], data[i]["currency"],2) %}</td>
+						<td style="text-align: right">{%= format_currency(data[i]["credit_note"], data[i]["currency"],2) %}</td>
+						<td style="text-align: right">{%= format_currency(data[i]["outstanding"], data[i]["currency"],2) %}</td>
 					{% } %}
 				{% } %}
 				</tr>

@@ -156,7 +156,6 @@ class SalesInvoice(SellingController):
 		pricing_rules: DF.Table[PricingRuleDetail]
 		project: DF.Link | None
 		redeem_loyalty_points: DF.Check
-		ref: DF.TextEditor | None
 		remarks: DF.SmallText | None
 		repost_required: DF.Check
 		represents_company: DF.Link | None
